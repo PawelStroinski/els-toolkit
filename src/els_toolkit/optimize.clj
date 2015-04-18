@@ -1,5 +1,7 @@
 (ns els-toolkit.optimize
-  (:require [clojure.math.numeric-tower :refer (ceil)]))
+  (:require [clojure.math.numeric-tower :refer (ceil)]
+            [taoensso.timbre :as timbre]))
+(timbre/refer-timbre)
 
 (defn els-size [{:keys [word skip]}]
   (inc (* (dec (count word))
@@ -43,18 +45,29 @@
                              xy-val)}))]
     (merge (xywh :x :w) (xywh :y :h))))
 
-(defn cylinders [elses]
-  (let [max-cylinder (apply max
-                            (map #(+ (:start %) (els-size %)) elses))]
-    (range 1 (inc max-cylinder))))
+(defn cylinders [elses max-cylinder]
+  (let [calculated-max (- (apply max
+                                 (map #(+ (:start %) (els-size %)) elses))
+                          (apply min
+                                 (map :start elses)))]
+    (range 1 (inc (min max-cylinder calculated-max)))))
 
 (defn table-area [{:keys [w h]}]
   (* w h))
 
-(defn best-table [elses synonyms]
+(defn best-table-iter [prev {:keys [elses cylinder] :as iter}]
+  (let [table (sum-tables (map #(best-table-for-els-in-cylinder % cylinder) elses))
+        area (table-area table)
+        prev-area (:area prev Double/POSITIVE_INFINITY)]
+    (if (or (< area prev-area)
+            (and (= area prev-area) (< cylinder (:cylinder prev))))
+      (assoc (merge table iter) :area area)
+      prev)))
+
+(defn best-table [elses synonyms max-cylinder]
+  (trace "best-table" (count elses))
   (let [els-mixes (one-of-each (vals (group-by (partial els-synonyms synonyms) elses)))
-        tables (for [els-mix els-mixes
-                     cylinder (cylinders els-mix)]
-                 (assoc (sum-tables (map #(best-table-for-els-in-cylinder % cylinder) els-mix))
-                   :cylinder cylinder :elses els-mix))]
-    (first (sort-by table-area (sort-by :cylinder tables)))))
+        iters (for [els-mix els-mixes
+                    cylinder (cylinders els-mix max-cylinder)]
+                {:elses els-mix :cylinder cylinder})]
+    (reduce best-table-iter nil iters)))

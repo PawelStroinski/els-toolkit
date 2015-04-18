@@ -14,12 +14,16 @@
     <orderEntry type="jdk" jdkName="1.6" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Leiningen: clojure-complete:0.2.3" level="project" />
+    <orderEntry type="library" name="Leiningen: com.taoensso/timbre:3.4.0" level="project" />
     <orderEntry type="library" name="Leiningen: expectations:2.0.9" level="project" />
     <orderEntry type="library" name="Leiningen: org.apache.mahout/mahout-math:0.9" level="project" />
     <orderEntry type="library" name="Leiningen: org.clojure/clojure:1.6.0" level="project" />
     <orderEntry type="library" name="Leiningen: org.clojure/data.zip:0.1.1" level="project" />
     <orderEntry type="library" name="Leiningen: org.clojure/math.numeric-tower:0.0.4" level="project" />
     <orderEntry type="library" name="Leiningen: org.clojure/tools.nrepl:0.2.6" level="project" />
+    <orderEntry type="library" name="Leiningen: com.taoensso/encore:1.21.0" level="project" />
+    <orderEntry type="library" name="Leiningen: io.aviso/pretty:0.1.16" level="project" />
+    <orderEntry type="library" name="Leiningen: org.clojure/tools.reader:0.8.13" level="project" />
     <orderEntry type="library" name="Leiningen: junit:4.8.1" level="project" />
     <orderEntry type="library" name="Leiningen: com.google.guava/guava:16.0" level="project" />
     <orderEntry type="library" name="Leiningen: org.apache.commons/commons-math3:3.2" level="project" />

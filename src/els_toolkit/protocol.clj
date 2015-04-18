@@ -15,9 +15,11 @@
 (defn xml->map [input]
   (let [zipper (-> input parse xml-zip)
         text1 #(xml1-> zipper % text&trim)
-        read-strings (fn [& keys] (zipmap keys (map #(read-string (text1 %)) keys)))]
+        read-strings (fn [& keys] (zipmap keys (map #(read-string (text1 %)) keys)))
+        replace-max #(if (= % 'max) Double/POSITIVE_INFINITY %)]
     (-> {:text      (slurp (text1 :text))
          :synonyms  (map zipper->word (xml-> zipper :word))
          :shuffling (keyword (text1 :shuffling))}
-        (merge (read-strings :min-skip :max-skip :text-population :seed))
-        (update-in [:max-skip] #(if (= % 'max) Double/POSITIVE_INFINITY %)))))
+        (merge (read-strings :min-skip :max-skip :max-cylinder :text-population :seed))
+        (update-in [:max-skip] replace-max)
+        (update-in [:max-cylinder] replace-max))))

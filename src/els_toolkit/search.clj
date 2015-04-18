@@ -31,11 +31,12 @@
 
 (defn look-for-words [{:keys [min-skip max-skip]} words text]
   (flatten
-    (for [word words
-          skip (range min-skip (inc (max-skip-for-word min-skip max-skip word text)))
-          start (range skip)]
-      (map #(-> {:word word :start (+ start (* % skip)) :skip skip})
-           (indexes-of word (text-with-skips-memo start skip text))))))
+    (for [word words]
+      (pmap (fn [skip]
+              (for [start (range skip)]
+                (map #(-> {:word word :start (+ start (* % skip)) :skip skip})
+                     (indexes-of word (text-with-skips-memo start skip text)))))
+            (range min-skip (inc (max-skip-for-word min-skip max-skip word text)))))))
 
 (defn look-for-synonyms [spec synonyms text]
   (let [found (look-for-words spec (flatten synonyms) text)
