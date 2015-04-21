@@ -24,6 +24,9 @@ els-toolkit executes a protocol defined in an XML file:
         </word>
         <word>GARY</word>
 
+        <!-- Search for reversed words too. -->
+        <reverse>false</reverse>
+
         <!-- Min & max skip numbers. '1' means the next letter, '2' means the letter
              after the next letter, etc. '1' is the lowest valid value. 'max' means
              the largest skip for text/word. -->

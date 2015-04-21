@@ -44,4 +44,5 @@
   (let [protocol-file (or (first args) "protocol.xml")]
     (printf "\nUsing '%s' protocol file.%s\n\n" protocol-file
             (if (first args) "" " (Different can be passed as an argument.)"))
+    (flush)
     (pprint (run (xml->map protocol-file)))))

@@ -23,3 +23,5 @@
 (expect Double/POSITIVE_INFINITY (:max-cylinder (xml->map (replace-in-xml ">50<" ">max<"))))
 (expect protocol (xml->map (replace-in-xml "</" " </")))
 (expect protocol (xml->map (replace-in-xml ">" "> ")))
+(expect [["FOOD" "DOOF"] ["ORDER" "REQUEST" "REDRO" "TSEUQER"] ["GARY" "YRAG"]]
+        (:synonyms (xml->map (replace-in-xml "<reverse>false</reverse>" "<reverse>true</reverse>"))))

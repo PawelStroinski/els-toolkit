@@ -1,7 +1,9 @@
 (ns els-toolkit.population
   (:require [els-toolkit.optimize :refer (els-size els-letter-positions)]
-            [clojure.string :refer (join)])
+            [clojure.string :refer (join)]
+            [taoensso.timbre :as timbre])
   (:import org.apache.mahout.math.jet.random.Uniform))
+(timbre/refer-timbre)
 
 (defmulti fisher–yates-shuffle (fn [arg _] (class arg)))
 
@@ -20,7 +22,7 @@
   (apply hash-map (interleave (els-letter-positions els)
                               (:word els))))
 
-(def els-letters-memo (memoize els-letters))
+(def ^:dynamic els-letters-memo els-letters)
 
 (defn one-els-conflicts? [l r]
   (let [l-letters (els-letters-memo l)
@@ -33,9 +35,11 @@
   (some #(one-els-conflicts? l %) rs))
 
 (defn elses-conflict? [elses]
-  (some #(els-conflicts? % elses) elses))
+  (binding [els-letters-memo (memoize els-letters)]
+    (some #(els-conflicts? % elses) elses)))
 
 (defn els-random-placement [elses text-len distribution]
+  (trace "els-random-placement")
   (let [random (map #(assoc % :start (->> (- text-len (els-size %))
                                           (.nextIntFromTo distribution 0)))
                     elses)]
