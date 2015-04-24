@@ -1,4 +1,5 @@
 # els-toolkit
+[![Build Status](https://travis-ci.org/PawelStroinski/els-toolkit.svg?branch=master)](https://travis-ci.org/PawelStroinski/els-toolkit)
 
 Equidistant Letter Sequences Monte Carlo experiment
 
