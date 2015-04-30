@@ -7,6 +7,8 @@ Equidistant Letter Sequences Monte Carlo experiment
 
     lein run
 
+If your system doesn't recognize `lein`, install [Leiningen](https://github.com/technomancy/leiningen/#installation) first.
+
 ## Options
 
 els-toolkit executes a protocol defined in an XML file:
