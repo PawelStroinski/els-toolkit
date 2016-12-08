@@ -1,27 +1,21 @@
 (ns els-toolkit.search
-  (:require [clojure.math.numeric-tower :refer (ceil)]))
+  (:require [primitive-math :as p]
+            [els-toolkit.math :refer [div-and-ceil]])
+  (:import [els_toolkit.search IndexOfWithSkip]))
 
-(defn indexes-of [match s]
-  (loop [indexes [] from-index 0]
-    (let [index (.indexOf s match from-index)]
+(defn indexes-of [match s start skip]
+  (loop [indexes [] from-index start]
+    (let [index (IndexOfWithSkip/indexOf s match from-index skip)]
       (if (= index -1)
         indexes
-        (recur (conj indexes index) (inc index))))))
+        (recur (conj indexes index) (+ index skip))))))
 
-(defn text-with-skips [start skip text]
-  (->> (drop start text)
-       (partition 1 skip)
-       (flatten)
-       (apply str)))
-
-(def text-with-skips-memo (memoize text-with-skips))
-
-(defn calculate-max-skip [word-len text-len]
-  (when (> word-len 1)
-    (loop [how-many-words (quot text-len word-len)]
-      (if (= (ceil (/ text-len (inc how-many-words)))
-             word-len)
-        (recur (inc how-many-words))
+(defn calculate-max-skip [^long word-len ^long text-len]
+  (when (p/> word-len 1)
+    (loop [how-many-words (p/div text-len word-len)]
+      (if (p/== (div-and-ceil text-len (p/inc how-many-words))
+                word-len)
+        (recur (p/inc how-many-words))
         how-many-words))))
 
 (defn max-skip-for-word [min-skip max-skip word text]
@@ -30,13 +24,11 @@
            min-skip)))
 
 (defn look-for-words [{:keys [min-skip max-skip]} words text]
-  (flatten
-    (for [word words]
-      (pmap (fn [skip]
-              (for [start (range skip)]
-                (map #(-> {:word word :start (+ start (* % skip)) :skip skip})
-                     (indexes-of word (text-with-skips-memo start skip text)))))
-            (range min-skip (inc (max-skip-for-word min-skip max-skip word text)))))))
+  (for [word words
+        skip (range min-skip (inc (max-skip-for-word min-skip max-skip word text)))
+        start (range skip)
+        i (indexes-of word text start skip)]
+    {:word word :start i :skip skip}))
 
 (defn look-for-synonyms [spec synonyms text]
   (let [found (look-for-words spec (flatten synonyms) text)

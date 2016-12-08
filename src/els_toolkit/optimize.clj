@@ -1,49 +1,78 @@
 (ns els-toolkit.optimize
-  (:require [clojure.math.numeric-tower :refer (ceil)]
-            [taoensso.timbre :as timbre]))
+  (:require [taoensso.timbre :as timbre]
+            [primitive-math :as p]
+            [els-toolkit.math :refer [min-max div-and-ceil]]))
 (timbre/refer-timbre)
 
-(defn els-size [{:keys [word skip]}]
-  (inc (* (dec (count word))
-          skip)))
+(defn els-size ^long [{:keys [word ^long skip]}]
+  (p/inc (p/* (p/dec (count word))
+              skip)))
 
-(defn els-letter-positions [{:keys [word start skip]}]
-  (map #(+ start (* % skip)) (range (count word))))
+(defn els-letter-positions' [{:keys [^long start ^long skip]}]
+  (map #(p/+ start (p/* ^long % skip))))
 
-(defn best-table-for-els-in-cylinder [{:keys [start] :as els} cylinder]
-  (let [y (if (>= start cylinder) (quot start cylinder) 0)
-        positions (map #(rem % cylinder) (els-letter-positions els))
-        leftmost (apply min positions)
-        rightmost (apply max positions)
-        w (inc (- rightmost leftmost))
-        h (long (ceil (/ (+ (first positions) (els-size els)) cylinder)))]
-    {:x leftmost :y y :w w :h h}))
+(defn els-letter-positions [{:keys [word] :as els}]
+  (sequence (els-letter-positions' els) (range (count word))))
 
-(defn one-of-each [sets]
+(deftype MiniTable [^long x1 ^long x2 ^long y1 ^long y2])
+
+(defn best-table-for-els-in-cylinder
+  [{:keys [word ^long start] :as els} ^long cylinder]
+  (let [y (if (p/>= start cylinder) (p/div start cylinder) 0)
+        positions (comp (els-letter-positions' els) (map #(p/rem % cylinder)))
+        [^long leftmost ^long rightmost] (transduce positions min-max
+                                                    (range (count word)))
+        [^long first-position] (into [] positions '(0))
+        h (div-and-ceil (p/+ first-position (els-size els)) cylinder)]
+    (->MiniTable leftmost (p/inc rightmost) y (p/+ y h))))
+
+(defn cartesian-product [sets]
   (if (seq sets)
-    (loop [[set1 & next-sets] sets
-           result [#{}]]
-      (if set1
-        (recur next-sets
-               (mapcat (fn [result1]
-                         (map #(conj result1 %) set1))
-                       result))
-        (set result)))
-    #{}))
+    (reduce
+      (fn [rets one-set]
+        (persistent!
+          (reduce
+            (fn [new-rets one-ret]
+              (reduce
+                (fn [new-rets-inner element]
+                  (conj! new-rets-inner (cons element one-ret)))
+                new-rets
+                one-set))
+            (transient [])
+            rets)))
+      ['()]
+      sets)
+    []))
 
 (defn els-synonyms [synonyms {:keys [word]}]
   (first (filter #(some #{word} %)
                  synonyms)))
 
-(defn sum-tables [tables]
-  (letfn [(xywh [xy-key wh-key]
-                (let [xy-val (apply min
-                                    (map xy-key tables))]
-                  {xy-key xy-val
-                   wh-key (- (apply max
-                                    (map #(+ (xy-key %) (wh-key %)) tables))
-                             xy-val)}))]
-    (merge (xywh :x :w) (xywh :y :h))))
+(deftype Table [^long x1 ^long x2 ^long y1 ^long y2 ^long area])
+
+(defn sum-tables [tables elses ^long prev-area]
+  (transduce
+    tables
+    (fn
+      ([^Table r]
+       (when r
+         {:x    (.x1 r)
+          :w    (p/- (.x2 r) (.x1 r))
+          :y    (.y1 r)
+          :h    (p/- (.y2 r) (.y1 r))
+          :area (.area r)}))
+      ([^Table r ^MiniTable in]
+       (let [x1 (p/min (.x1 r) (.x1 in))
+             x2 (p/max (.x2 r) (.x2 in))
+             y1 (p/min (.y1 r) (.y1 in))
+             y2 (p/max (.y2 r) (.y2 in))
+             area (p/* (p/- x2 x1)
+                       (p/- y2 y1))]
+         (if (p/> area prev-area)
+           (reduced nil)
+           (->Table x1 x2 y1 y2 area)))))
+    (->Table Long/MAX_VALUE Long/MIN_VALUE Long/MAX_VALUE Long/MIN_VALUE 0)
+    elses))
 
 (defn cylinders [elses max-cylinder]
   (let [calculated-max (- (apply max
@@ -52,22 +81,35 @@
                                  (map :start elses)))]
     (range 1 (inc (min max-cylinder calculated-max)))))
 
-(defn table-area [{:keys [w h]}]
-  (* w h))
-
-(defn best-table-iter [prev {:keys [elses cylinder] :as iter}]
-  (let [table (sum-tables (map #(best-table-for-els-in-cylinder % cylinder) elses))
-        area (table-area table)
-        prev-area (:area prev Double/POSITIVE_INFINITY)]
+(defn best-table-iter
+  [best-table-for-els-in-cylinder* prev {:keys [elses cylinder] :as iter}]
+  (let [prev-area (:area prev Long/MAX_VALUE)
+        table (sum-tables (map #(best-table-for-els-in-cylinder* % cylinder)) elses prev-area)
+        area (:area table Long/MAX_VALUE)]
     (if (or (< area prev-area)
             (and (= area prev-area) (< cylinder (:cylinder prev))))
-      (assoc (merge table iter) :area area)
+      (merge table iter)
       prev)))
+
+(defn memoize-best-table-for-els-in-cylinder [^long cylinders-count ^long elses-count]
+  (let [mem (atom (vec (repeat (p/* cylinders-count elses-count) nil)))]
+    (fn [{:keys [^long id] :as els} ^long cylinder]
+      (let [i (p/+ (p/* (p/dec cylinder) elses-count) id)]
+        (if-let [v (nth @mem i)]
+          v
+          (let [ret (best-table-for-els-in-cylinder els cylinder)]
+            (swap! mem assoc i ret)
+            ret))))))
 
 (defn best-table [elses synonyms max-cylinder]
   (trace "best-table" (count elses))
-  (let [els-mixes (one-of-each (vals (group-by (partial els-synonyms synonyms) elses)))
+  (let [elses (map-indexed (fn [i m] (assoc m :id i)) elses)
+        cylidners (cylinders elses max-cylinder)
+        els-mixes (cartesian-product
+                    (vals (group-by (partial els-synonyms synonyms) elses)))
         iters (for [els-mix els-mixes
                     cylinder (cylinders els-mix max-cylinder)]
                 {:elses els-mix :cylinder cylinder})]
-    (reduce best-table-iter nil iters)))
+    (reduce (partial best-table-iter (memoize-best-table-for-els-in-cylinder
+                                       (count cylidners) (count elses)))
+            nil iters)))

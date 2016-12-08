@@ -5,13 +5,37 @@ Equidistant Letter Sequences Monte Carlo experiment
 
 ## Usage
 
+### Alternative 1
+
+Download the [els-toolkit-0.2.0.zip](https://github.com/PawelStroinski/els-toolkit/releases/download/0.2.0/els-toolkit-0.2.0.zip) file, extract it, and run the following command in the same directory:
+
+    java -server -jar els-toolkit-0.2.0-standalone.jar
+    
+If your system does not recognize `java`, install [Java](https://java.com/en/download/) first (version 8 is fine).
+    
+For performance reasons, it is good to specify the amount of RAM to use (here is 8GB):
+
+    java -Xmx8g -Xms8g -server -jar els-toolkit-0.2.0-standalone.jar
+
+### Alternative 2
+
+After checking out the code, run the following command in the same directory:
+
     lein run
 
-If your system doesn't recognize `lein`, install [Leiningen](https://github.com/technomancy/leiningen/#installation) first.
+If your system does not recognize `lein`, install [Leiningen](https://github.com/technomancy/leiningen/#installation) first.
+
+### Alternative 3
+
+If you wish to build the jar file rather than downloading it, see **Alternative 2** but use the following command instead:
+
+    lein uberjar
+
+Afterwards, use the command from **Alternative 1** to run the jar file built.
 
 ## Options
 
-els-toolkit executes a protocol defined in an XML file:
+els-toolkit executes a protocol defined in an XML file such as the following:
 
     <protocol>
         <!-- Filename/URL of a text file. The file should contain letters/numbers
@@ -56,26 +80,28 @@ els-toolkit executes a protocol defined in an XML file:
 
 ## Examples
 
-    $ lein run
+    $ java -server -jar els-toolkit-0.2.0-standalone.jar
 
-    Using 'protocol.xml' protocol file. (Different can be passed as an argument.)
-
+    Using 'protocol.xml' protocol file. (A different one can be passed in as an argument.)
+    
+    200/200   100% [==================================================]  ETA: 00:00
+    
     {:table
-     {:area 36,
-      :cylinder 9,
+     {:x 0,
+      :w 6,
+      :y 1,
+      :h 6,
+      :area 36,
       :elses
       #{{:word "ORDER", :start 10, :skip 10}
         {:word "FOOD", :start 9, :skip 10}
         {:word "GARY", :start 27, :skip 10}},
-      :h 6,
-      :y 1,
-      :x 0,
-      :w 6},
+      :cylinder 9},
      :same-or-better 137}
 
 ## License
 
-Copyright © 2015 Paweł Stroiński
+Copyright © 2015, 2016 Paweł Stroiński
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.

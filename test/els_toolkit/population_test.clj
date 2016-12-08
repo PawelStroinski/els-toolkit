@@ -4,12 +4,21 @@
             [els-toolkit.search :refer (look-for-words)]
             [clojure.string :refer (join)]))
 
-(expect [19 31 90 25 33 34 103 87 45 52 74 76 41 101 75 94 37 69 96 85 51 92 24 23 30 59 89 102 57 42 12 88 27 63
-         95 13 97 61 40 71 11 55 8 67 9 7 54 44 68 60 20 99 26 43 39 100 81 65 58 70 66 21 10 15 83 28 104 22 53
-         29 98 5 48 86 73 72 50 78 32 93 62 77 14 80 18 84 38 35 49 91 79 17 47 56 36 82 64 6 46 16]
-        (fisher–yates-shuffle (range 5 105) (new-distribution 1)))
+(defn call-fisher–yates-shuffle [input distribution]
+  (let [randoms (fisher–yates-shuffle-randoms distribution (count input))]
+    (fisher–yates-shuffle input randoms)))
 
-(expect "tesurteeffldslh" (fisher–yates-shuffle "shuffledletters" (new-distribution 1)))
+(defn stringify [nums]
+  (join (map char nums)))
+
+(expect
+  (stringify
+    [19 31 90 25 33 34 103 87 45 52 74 76 41 101 75 94 37 69 96 85 51 92 24 23 30 59 89 102 57 42 12 88 27 63
+     95 13 97 61 40 71 11 55 8 67 9 7 54 44 68 60 20 99 26 43 39 100 81 65 58 70 66 21 10 15 83 28 104 22 53
+     29 98 5 48 86 73 72 50 78 32 93 62 77 14 80 18 84 38 35 49 91 79 17 47 56 36 82 64 6 46 16])
+  (call-fisher–yates-shuffle (stringify (range 5 105)) (new-distribution 1)))
+
+(expect "tesurteeffldslh" (call-fisher–yates-shuffle "shuffledletters" (new-distribution 1)))
 
 (def norm-elses #{{:word "uuu" :start 3 :skip 7}
                   {:word "jjjj" :start 1 :skip 7}

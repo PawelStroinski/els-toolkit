@@ -2,8 +2,7 @@
   (:require [clojure.xml :refer (parse)]
             [clojure.zip :refer (xml-zip)]
             [clojure.data.zip.xml :refer (xml-> xml1-> text)]
-            [clojure.string :as str]
-            [clojure.math.numeric-tower :refer (ceil)]))
+            [clojure.string :as str]))
 
 (def text&trim (comp str/trim text))
 

@@ -1,22 +1,17 @@
 (ns els-toolkit.population
   (:require [els-toolkit.optimize :refer (els-size els-letter-positions)]
             [clojure.string :refer (join)]
-            [taoensso.timbre :as timbre])
-  (:import org.apache.mahout.math.jet.random.Uniform))
+            [taoensso.timbre :as timbre]
+            [primitive-math :as p])
+  (:import [org.apache.mahout.math.jet.random Uniform]
+           [els_toolkit.population FisherYatesShuffle]))
 (timbre/refer-timbre)
 
-(defmulti fisher–yates-shuffle (fn [arg _] (class arg)))
+(defn fisher–yates-shuffle-randoms [distribution input-length]
+  (FisherYatesShuffle/makeRandoms distribution input-length))
 
-(defmethod fisher–yates-shuffle :default [coll distribution]
-  "Based on http://rosettacode.org/wiki/Knuth_shuffle#Clojure
-  and http://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm"
-  (reduce (fn [v i] (let [j (.nextIntFromTo distribution 0 i)]
-                      (assoc v i (v j) j (v i))))
-          (vec coll)
-          (range (dec (count coll)) 0 -1)))
-
-(defmethod fisher–yates-shuffle String [s distribution]
-  (join (fisher–yates-shuffle (seq s) distribution)))
+(defn fisher–yates-shuffle [input randoms]
+  (FisherYatesShuffle/shuffle input randoms))
 
 (defn els-letters [els]
   (apply hash-map (interleave (els-letter-positions els)
@@ -38,14 +33,18 @@
   (binding [els-letters-memo (memoize els-letters)]
     (some #(els-conflicts? % elses) elses)))
 
-(defn els-random-placement [elses text-len distribution]
-  (trace "els-random-placement")
-  (let [random (map #(assoc % :start (->> (- text-len (els-size %))
-                                          (.nextIntFromTo distribution 0)))
-                    elses)]
-    (if (elses-conflict? random)
-      (recur elses text-len distribution)
-      random)))
+(defn els-random-placement [elses text-len ^Uniform distribution]
+  (letfn
+    [(f []
+       (let [random (map #(assoc % :start (->> (- text-len (els-size %))
+                                               (.nextIntFromTo distribution 0)))
+                         elses)]
+         (if (elses-conflict? random)
+           (recur)
+           random)))]
+    (trace "els-random-placement")
+    (locking distribution
+      (f))))
 
-(defn new-distribution [seed]
+(defn new-distribution [^long seed]
   (Uniform. 0.0 0.0 seed))
